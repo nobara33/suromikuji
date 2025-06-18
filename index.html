@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>スロットおみくじ 🎰</title>
+  <style>
+    body {
+      background-color: #fffaf0;
+      font-family: "Meiryo", sans-serif;
+      text-align: center;
+      padding-top: 50px;
+    }
+    .slot-container {
+      display: inline-flex;
+      gap: 10px;
+    }
+    .slot {
+      width: 80px;
+      height: 80px;
+      border: 5px solid #ccc;
+      overflow: hidden;
+      background: white;
+      position: relative;
+    }
+    .reel {
+      position: absolute;
+      top: 0;
+      width: 100%;
+      transition: top 0.1s linear;
+    }
+    .symbol {
+      height: 80px;
+      line-height: 80px;
+      font-size: 48px;
+    }
+    button {
+      margin-top: 30px;
+      font-size: 20px;
+      padding: 10px 30px;
+      background-color: #debff7;
+      border: none;
+      border-radius: 8px;
+    }
+    .result {
+      margin-top: 20px;
+      font-size: 24px;
+      color: #800080;
+    }
+  </style>
+</head>
+<body>
+  <h1>スロットおみくじ 🎰</h1>
+
+  <div class="slot-container">
+    <div class="slot" id="slot0"><div class="reel" id="reel0"></div></div>
+    <div class="slot" id="slot1"><div class="reel" id="reel1"></div></div>
+    <div class="slot" id="slot2"><div class="reel" id="reel2"></div></div>
+  </div>
+
+  <div>
+    <button id="controlButton">スタート！</button>
+  </div>
+
+  <div class="result" id="message"></div>
+
+  <script>
+    const options = [
+      ['大', '極', '特', '超', '鬼', '激'],
+      ['大', '中', '小', '大', '中', '小'],
+      ['吉', '凶', '吉', '凶', '吉', '凶']
+    ];
+
+    const comments = {
+      "吉": [
+        "いいことあるかも！楽しみにしてね♪",
+        "今日はきっとラッキーデイ！",
+        "吉！やったね！",
+        "期待していいかも！",
+        "ラッキーアイテムを探してみて♪"
+      ],
+      "凶": [
+        "でも大丈夫！運はこれから上がる⤴️",
+        "焦らず一歩ずついこう！",
+        "そんな日もあるよ、気にしない！",
+        "次はいいことあるさ！",
+        "深呼吸してリフレッシュしよう！"
+      ]
+    };
+
+    const reels = [document.getElementById("reel0"), document.getElementById("reel1"), document.getElementById("reel2")];
+    const button = document.getElementById("controlButton");
+    const messageElem = document.getElementById("message");
+
+    let spinning = [false, false, false];
+    let intervals = [null, null, null];
+    let clickCount = 0;
+    let results = ["", "", ""];
+
+    function buildReel(reel, symbols) {
+      reel.innerHTML = "";
+      // ループ感を出すためにシンボルを2セット用意
+      const fullSymbols = [...symbols, ...symbols];
+      for (let i = 0; i < fullSymbols.length; i++) {
+        const div = document.createElement("div");
+        div.className = "symbol";
+        div.textContent = fullSymbols[i];
+        reel.appendChild(div);
+      }
+    }
+
+    function startSpin(index) {
+      spinning[index] = true;
+      const reel = reels[index];
+      const symbols = options[index];
+      let pos = 0;
+      intervals[index] = setInterval(() => {
+        pos = (pos + 1) % symbols.length;
+        reel.style.top = `-${pos * 80}px`;
+      }, 100);
+    }
+
+    function stopSpin(index) {
+      clearInterval(intervals[index]);
+      spinning[index] = false;
+
+      // 最後に選ばれて表示されているシンボルを取得
+      const symbols = options[index];
+      const currentTop = parseInt(reels[index].style.top || "0");
+      const symbolIndex = Math.abs(currentTop / 80) % symbols.length;
+      const result = symbols[symbolIndex];
+      results[index] = result;
+
+      // リールを中央に合わせる
+      reels[index].style.top = `-${symbolIndex * 80}px`;
+    }
+
+    button.addEventListener("click", () => {
+      if (clickCount === 0) {
+        // 初回：全リール準備＆スタート
+        messageElem.textContent = "";
+        for (let i = 0; i < 3; i++) {
+          buildReel(reels[i], options[i]);
+          reels[i].style.top = "0px";
+          startSpin(i);
+        }
+        button.textContent = "左ストップ！";
+        clickCount++;
+      } else if (clickCount <= 3) {
+        stopSpin(clickCount - 1);
+        if (clickCount === 1) button.textContent = "中ストップ！";
+        if (clickCount === 2) button.textContent = "右ストップ！";
+        if (clickCount === 3) {
+          // 結果を表示
+          const last = results[2];
+          const msgList = comments[last] || [];
+          const msg = msgList[Math.floor(Math.random() * msgList.length)] || "";
+          messageElem.textContent = msg;
+          button.textContent = "もう一回！";
+        }
+        clickCount++;
+      } else {
+        // リセット
+        clickCount = 0;
+        results = ["", "", ""];
+        button.textContent = "スタート！";
+        for (let i = 0; i < 3; i++) {
+          reels[i].innerHTML = "";
+          reels[i].style.top = "0px";
+        }
+      }
+    });
+  </script>
+</body>
+</html>
